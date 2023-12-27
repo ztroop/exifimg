@@ -9,13 +9,12 @@ fn main() {
     let matches = App::new("EXIF Utility")
         .arg(Arg::with_name("file_path").required(true))
         .arg(Arg::with_name("recursive").long("recursive").short('r'))
-        .arg(Arg::with_name("read").long("read").short('d'))
         .arg(Arg::with_name("strip").long("strip").short('s'))
         .get_matches();
 
     let file_path = matches.value_of("file_path").unwrap().to_string();
     let recursive = matches.is_present("recursive");
-    let action = if matches.is_present("read") {
+    let action = if matches.is_present("strip") {
         Action::Strip
     } else {
         Action::Read
@@ -82,17 +81,20 @@ impl ExifHandler for DirectoryHandler {
 
 fn read_exif_from_file(file_path: &str) -> Result<(), String> {
     let file = File::open(file_path).map_err(|e| e.to_string())?;
-    let reader = Reader::new()
-        .read_from_container(&mut BufReader::new(file))
-        .map_err(|e| e.to_string())?;
 
-    for field in reader.fields() {
-        println!(
-            "{}: {}",
-            field.tag,
-            field.display_value().with_unit(&reader)
-        );
+    if let Ok(reader) = Reader::new()
+        .read_from_container(&mut BufReader::new(file))
+        .map_err(|e| e.to_string())
+    {
+        for field in reader.fields() {
+            println!(
+                "{0: <10} | {1: <10}",
+                field.tag,
+                field.display_value().with_unit(&reader)
+            );
+        }
     }
+
     Ok(())
 }
 
